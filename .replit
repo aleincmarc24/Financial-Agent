@@ -1,0 +1,13 @@
+modules = ["python-3.11"]
+[agent]
+expertMode = true
+stack = "BEST_EFFORT_FALLBACK"
+integrations = ["github:1.0.0"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["libxcrypt"]
+
+[userenv]
+
+[userenv.shared]
