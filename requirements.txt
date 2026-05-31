@@ -1,0 +1,6 @@
+httpx
+openai
+gspread
+google-auth
+pydantic
+python-dotenv
