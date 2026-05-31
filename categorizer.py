@@ -17,6 +17,18 @@ ALLOWED_CATEGORIES = [
     "Food and Grocery", "Transport", "Housing and Tax or Legacy", "Shopping",
     "Entertainment", "Health", "Income", "Subscription", "Investment", "Altro"
 ]
+ALLOWED_SUBCATEGORIES = [
+    "Supermarket", "Restaurant", "Cafe", "Food Delivery",
+    "Rideshare", "Fuel", "Public Transport", "Flight", "Parking",
+    "Rent", "Utilities", "Insurance", "Tax",
+    "Clothing", "Electronics", "General Retail",
+    "Movies", "Games", "Events", "Bar",
+    "Pharmacy", "Gym", "Medical",
+    "Salary", "Freelance", "Transfer In",
+    "Streaming", "Music", "Gaming Subscription",
+    "SaaS", "AI Tool", "Developer Tool", "Cloud Service",
+    "Bank Fee", "Payment", "Transfer", "Other"
+]
 
 # Costruisci il prompt in modo sicuro (no f-string con triple quotes)
 _CATEGORIES_STR = ", ".join(ALLOWED_CATEGORIES)
@@ -28,18 +40,30 @@ For each transaction, analyze the merchant name, description, amount, and contex
 Map it to the SINGLE most appropriate category from this EXCLUSIVE list:
 {categories}
 
+## CATEGORY DEFINITIONS
+- "Food and Grocery": supermarkets, restaurants, cafes, food delivery (Aldi, Woolworths, UberEats, McDonald's)
+- "Transport": fuel, public transport, rideshare, parking, flights (Uber, trains, buses)
+- "Housing and Tax or Legacy": rent, mortgage, utilities, council rates, insurance, taxes
+- "Shopping": clothing, electronics, general retail, Amazon, eBay
+- "Entertainment": movies, games, sports, hobbies, bars, events
+- "Health": pharmacy, gym, medical, dental, psychology
+- "Income": salary, freelance payments, transfers IN (positive amounts)
+- "Subscription": personal entertainment subscriptions (Netflix, Spotify, Disney+, Apple TV)
+- "Investment": AI tools, developer tools, SaaS, software for work or business (Claude AI, ChatGPT, Replit, GitHub, Notion, AWS)
+- "Altro": truly unidentifiable transactions only
+
+
 ## RULES
-- Return ONLY valid JSON array: [{{"id": str, "category": str, "confidence": float}}]
-- `category` must match EXACTLY one item from the allowed list (case-sensitive)
-- `confidence`: 0.0-1.0 based on how certain you are
-- If truly ambiguous, use "Altro" with confidence < 0.6
-- Use your world knowledge: you know Aldi is a supermarket, Uber can be transport or food delivery, Netflix is a subscription, etc.
+- Return ONLY valid JSON array: [{{"id": str, "category": str, "subcategory": str, "confidence": float}}]
+- `subcategory` must be a short specific label (e.g. "Supermarket", "SaaS", "Rideshare", "Bank Fee")
 
 ## EXAMPLES
 {{"merchant": "Aldi", "description": "Card purchase", "amount": -14.42}} -> "Food and Grocery"
 {{"merchant": "Uber", "description": "Trip to airport", "amount": -45.00}} -> "Transport"
 {{"merchant": "Netflix", "description": "Monthly subscription", "amount": -19.99}} -> "Subscription"
+{{"merchant": "Claude AI", "description": "claude.ai", "amount": -34.00}} -> "Investment"
 {{"merchant": "Replit", "description": "Pro plan", "amount": -20.00}} -> "Investment"
+{{"merchant": "ChatGPT", "description": "Plus subscription", "amount": -20.00}} -> "Investment"
 {{"merchant": "Unknown", "description": "POS transaction", "amount": -5.00}} -> "Altro"
 """.format(categories=_CATEGORIES_STR)
 
@@ -121,7 +145,9 @@ def categorize_batch(transactions: list[dict], batch_size: int = 25) -> list[dic
                         **original,
                         "id": item["id"],
                         "category": cat,
+                        "subcategory": item.get("subcategory", "Other"),
                         "confidence": float(item.get("confidence", 0.0))
+
                     })
                 except (KeyError, TypeError, ValueError):
                     original = next((t for t in batch if str(t.get("id")) == str(item.get("id", ""))), {})
