@@ -8,7 +8,7 @@ from datetime import datetime
 from config import config
 from metrics import log_store, log_error
 
-SHEET_TAB = "transazioni"
+SHEET_TAB = "transactions"
 
 def _extract_sheet_id(raw: str) -> str:
     """Accetta sia l'ID puro sia l'URL completo del foglio."""
@@ -26,6 +26,59 @@ def _get_worksheet():
     return spreadsheet.worksheet(SHEET_TAB)
 
 def write_to_sheets(categorized_txs: list[dict]):
+    CATEGORY_COLORS = {
+        "Food and Grocery":        (1.0, 0.84, 0.0),    # Oro
+        "Transport":               (0.68, 0.85, 0.90),  # Azzurro chiaro
+        "Income":                  (0.70, 0.90, 0.70),  # Verde chiaro
+        "Shopping":                (1.0, 0.75, 0.50),   # Arancione chiaro
+        "Subscription":            (0.80, 0.70, 0.90),  # Viola chiaro
+        "Altro":                   (0.85, 0.85, 0.85),  # Grigio chiaro
+        "Housing and Tax or Legacy":(0.50, 0.50, 0.50), # Grigio scuro
+        "Investment":              (0.60, 0.80, 1.0),   # Blu navy chiaro
+        "Health":                  (1.0, 0.75, 0.80),   # Rosa chiaro
+        "Entertainment":           (1.0, 0.95, 0.60),   # Giallo chiaro
+    }
+    def _apply_row_colors(ws, categorized_txs: list[dict], start_row: int):
+      """Colora ogni riga in base alla categoria."""
+      try:
+          requests = []
+          sheet_id = ws._properties["sheetId"]
+
+          for i, tx in enumerate(categorized_txs):
+              cat = tx.get("category", "Altro")
+              color = CATEGORY_COLORS.get(cat, (1.0, 1.0, 1.0))
+              row_index = start_row + i - 1  # 0-based
+
+              requests.append({
+                  "repeatCell": {
+                      "range": {
+                          "sheetId": sheet_id,
+                          "startRowIndex": row_index,
+                          "endRowIndex": row_index + 1,
+                          "startColumnIndex": 0,
+                          "endColumnIndex": 8
+                      },
+                      "cell": {
+                          "userEnteredFormat": {
+                              "backgroundColor": {
+                                  "red": color[0],
+                                  "green": color[1],
+                                  "blue": color[2]
+                              }
+                          }
+                      },
+                      "fields": "userEnteredFormat.backgroundColor"
+                  }
+              })
+
+          if requests:
+              ws.spreadsheet.batch_update({"requests": requests})
+              logging.info(f"COLORS_APPLIED: {len(requests)} rows colored")
+
+      except Exception as e:
+          log_error("color_rows", e)
+
+  
     """Deduplica, formatta e scrive in batch sul tab 'transazioni'."""
     if not categorized_txs:
         logging.info("STORAGE: empty_input. Skip.")
@@ -78,6 +131,11 @@ def write_to_sheets(categorized_txs: list[dict]):
 
         # 3. Batch write (1 chiamata API, zero duplicati)
         ws.append_rows(rows, value_input_option="USER_ENTERED")
+        # Colora le righe appena scritte
+        existing_row_count = len(ws.col_values(1))
+        start_row = existing_row_count - len(rows) + 1
+        _apply_row_colors(ws, [tx for tx in categorized_txs if str(tx["id"]) not in existing_ids], start_row)
+
         log_store(len(rows))
         logging.info(f"STORAGE_OK: {len(rows)} righe scritte in '{SHEET_TAB}'")
 
