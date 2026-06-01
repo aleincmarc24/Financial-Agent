@@ -212,9 +212,9 @@ Dati: {json.dumps(payload, ensure_ascii=False)}"""
     msg["To"] = gmail_user
     msg.attach(MIMEText(html, "html"))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:F
         smtp.login(gmail_user, gmail_password)
-        smtp.sendmail(gmail_user, TO_EMAIL, msg.as_string())
+        smtp.sendmail(gmail_user, gmail_user, msg.as_string())
 
     logging.info("📧 Email inviata con successo")
 
