@@ -10,7 +10,6 @@ GOOGLE_CREDS = json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"])
 SHEET_ID = os.environ["SHEET_ID"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
-TO_EMAIL = os.environ["TO_EMAIL"]
 
 # ─── SETUP GLOBALE ────────────────────────────────────────────────────────────
 gc = gspread.service_account_from_dict(GOOGLE_CREDS)
@@ -210,7 +209,7 @@ Dati: {json.dumps(payload, ensure_ascii=False)}"""
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"📊 Report Spese {curr_week}"
     msg["From"] = gmail_user
-    msg["To"] = TO_EMAIL
+    msg["To"] = gmail_user
     msg.attach(MIMEText(html, "html"))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
