@@ -11,8 +11,6 @@ SHEET_ID = os.environ["SHEET_ID"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 TO_EMAIL = os.environ["TO_EMAIL"]
-gmail_user = os.environ["GMAIL_USER"]
-gmail_password = os.environ["GMAIL_APP_PASSWORD"]
 
 # ─── SETUP GLOBALE ────────────────────────────────────────────────────────────
 gc = gspread.service_account_from_dict(GOOGLE_CREDS)
@@ -206,7 +204,9 @@ Dati: {json.dumps(payload, ensure_ascii=False)}"""
         max_tokens=600,
     )
     html = res.choices[0].message.content.strip()
-
+    
+    gmail_user = os.environ["GMAIL_USER"]
+    gmail_password = os.environ["GMAIL_APP_PASSWORD"]
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"📊 Report Spese {curr_week}"
     msg["From"] = gmail_user
