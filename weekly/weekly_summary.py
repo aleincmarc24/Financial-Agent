@@ -10,6 +10,7 @@ OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 TO_EMAIL = os.environ["TO_EMAIL"]
 
+
 # ─── SETUP GLOBALE ────────────────────────────────────────────────────────────
 gc = gspread.service_account_from_dict(GOOGLE_CREDS)
 sh = gc.open_by_key(SHEET_ID)
@@ -203,14 +204,23 @@ Dati: {json.dumps(payload, ensure_ascii=False)}"""
     )
     html = res.choices[0].message.content.strip()
 
-    resend.Emails.send(
-        {
-            "from": os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
-            "to": [TO_EMAIL],
-            "subject": f"📊 Report Spese {curr_week}",
-            "html": html,
-        }
-    )
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    gmail_user = os.environ["GMAIL_USER"]
+    gmail_password = os.environ["GMAIL_APP_PASSWORD"]
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"📊 Report Spese {curr_week}"
+    msg["From"] = gmail_user
+    msg["To"] = TO_EMAIL
+    msg.attach(MIMEText(html, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(gmail_user, gmail_password)
+        smtp.sendmail(gmail_user, TO_EMAIL, msg.as_string())
+
     logging.info("📧 Email inviata con successo")
 
 
