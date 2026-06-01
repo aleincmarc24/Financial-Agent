@@ -1,0 +1,32 @@
+name: Weekly Financial Report
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'  # Ogni lunedì alle 01:00 UTC = 09:00 Perth (UTC+8)
+  workflow_dispatch:       # Esecuzione manuale dal sito GitHub
+
+jobs:
+  run-weekly-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run weekly report
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          OPENAI_API_KEY: ${{ secrets.LLM_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: python weekly/weekly_summary.py
