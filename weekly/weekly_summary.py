@@ -212,7 +212,7 @@ Dati: {json.dumps(payload, ensure_ascii=False)}"""
     msg["To"] = gmail_user
     msg.attach(MIMEText(html, "html"))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:F
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(gmail_user, gmail_password)
         smtp.sendmail(gmail_user, gmail_user, msg.as_string())
 
